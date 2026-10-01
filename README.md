@@ -172,11 +172,12 @@ Your default browser will open automatically at:
 http://localhost:8501
 ```
 
-### 2. Complete Onboarding
-1. Enter your **Name** (e.g., `Alex`).
-2. Enter your numerical **Telegram Chat ID** (e.g., `123456789`).
-3. Click **Let's go 🚀**.
-4. The system initializes the Gemini chat session with the specialized campus issue reporting persona.
+### 2. Complete Onboarding (First-Time User Experience)
+When a user opens FixSnap for the first time, the onboarding screen dynamically detects and displays the configured Telegram bot:
+1. **Start the Bot:** The user clicks the direct link (e.g. `👉 Open @FixSnapReporter_bot on Telegram`) and taps **Start** (or sends `/start`). This authorizes the bot to deliver reports to them.
+2. **Find Chat ID:** The user clicks the [@userinfobot](https://t.me/userinfobot) link on screen to view their numerical ID (e.g., `123456789`).
+3. **Submit:** The user enters their **Name** and numerical **Telegram Chat ID** and clicks **Let's go 🚀**.
+4. The system initializes the Gemini vision and chat session.
 
 ### 3. Report an Issue (Conversational Chat + Vision)
 1. **With a photo:** Attach an image (`.jpg`, `.jpeg`, `.png`) of a campus problem (e.g., a leaking water pipe, broken desk, damaged tile) in the chat input. Optionally add a description or location (e.g., *“3rd floor Science building restroom”*).

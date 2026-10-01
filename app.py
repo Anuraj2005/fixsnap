@@ -50,6 +50,29 @@ def get_gemini_client(api_key: str):
     return genai.Client(api_key=api_key)
 
 
+@st.cache_resource
+def get_bot_username(token: str) -> str:
+    """Fetches the Telegram bot username dynamically using the token."""
+    if not token:
+        return ""
+    try:
+        bot = Bot(token=token)
+
+        async def _get():
+            me = await bot.get_me()
+            return me.username
+
+        try:
+            return asyncio.run(_get())
+        except RuntimeError:
+            with concurrent.futures.ThreadPoolExecutor() as executor:
+                return executor.submit(asyncio.run, _get()).result()
+    except Exception:
+        return ""
+
+bot_username = get_bot_username(TELEGRAM_BOT_TOKEN)
+
+
 def create_chat_session(client, model=MODEL_NAME):
     """Creates a Gemini chat session with fallback options."""
     models_to_try = [model, "gemini-3.5-flash", "gemini-3.8-flash", "gemini-flash-latest"]
@@ -176,30 +199,44 @@ if "onboarded" not in st.session_state:
 
     st.markdown(
         """
-        Welcome to **FixSnap**, your campus facility and maintenance reporting assistant!
-        Quickly document broken fixtures, leaks, electrical faults, or hazards by snapping a photo
-        or describing the issue.
+        Welcome to **FixSnap**, your AI campus maintenance assistant!
+        Quickly report broken fixtures, leaks, electrical hazards, or facility issues.
         """
+    )
+
+    # Dynamic Bot Information Box
+    bot_link = f"https://t.me/{bot_username}" if bot_username else "https://t.me/BotFather"
+    bot_label = f"@{bot_username}" if bot_username else "Telegram Bot"
+
+    st.info(
+        f"📱 **First time here? Follow these 2 quick setup steps:**\n\n"
+        f"1. **Start the Bot:** Open [{bot_label}]({bot_link}) on Telegram and press **Start** (or send `/start`).\n"
+        f"2. **Get your Chat ID:** Message [@userinfobot](https://t.me/userinfobot) to get your numeric ID (e.g. `123456789`), then paste it below."
     )
 
     with st.form("onboarding_form"):
         name = st.text_input("Your name", placeholder="e.g. Alex Rivera")
         telegram_chat_id = st.text_input(
-            "Telegram chat ID",
+            "Telegram chat ID (numbers only)",
             placeholder="e.g. 123456789",
-            help="Your personal Telegram numerical chat ID. You can find it by messaging @userinfobot on Telegram.",
+            help="Your numeric user ID. You can find it by messaging @userinfobot on Telegram.",
         )
 
         submitted = st.form_submit_button("Let's go 🚀", use_container_width=True)
 
         if submitted:
-            if not name.strip() or not telegram_chat_id.strip():
+            clean_name = name.strip()
+            clean_chat_id = telegram_chat_id.strip()
+
+            if not clean_name or not clean_chat_id:
                 st.warning("Please fill in both your name and Telegram chat ID.")
+            elif clean_chat_id.startswith("@"):
+                st.warning("⚠️ Please enter your **numerical** Chat ID (e.g. `123456789`), not your @username. You can find it from [@userinfobot](https://t.me/userinfobot).")
             elif not gemini_client:
                 st.error("Cannot proceed: Gemini API key is missing or invalid. Please check secrets.")
             else:
-                st.session_state.name = name.strip()
-                st.session_state.telegram_chat_id = telegram_chat_id.strip()
+                st.session_state.name = clean_name
+                st.session_state.telegram_chat_id = clean_chat_id
 
                 try:
                     st.session_state.chat = create_chat_session(gemini_client)
@@ -222,22 +259,24 @@ with st.sidebar:
     st.header("👤 Reporter Profile")
     st.write(f"**Name:** {user_name}")
     st.write(f"**Telegram ID:** `{user_chat_id}`")
+    if bot_username:
+        st.write(f"**Telegram Bot:** [{bot_label}]({bot_link})")
     st.divider()
 
     st.subheader("💡 Quick Tips")
     st.markdown(
-        """
-        1. **Take a clear photo** of the issue (pothole, water leak, broken light, etc.).
-        2. Mention the **location** (building, floor, room number).
-        3. Clarify any follow-up questions from FixSnap.
+        f"""
+        1. **Take a clear photo** of the issue.
+        2. Mention the **location** (building, floor, room).
+        3. Clarify any questions from FixSnap.
         4. Click **Send Report** to dispatch the report to your Telegram.
         """
     )
     st.divider()
 
     st.info(
-        "⚠️ **Note:** Ensure you have started a conversation with your bot on Telegram (send `/start`) "
-        "before dispatching a report so Telegram permits bot messaging."
+        f"⚠️ **Note:** Ensure you have clicked **Start** on [{bot_label}]({bot_link}) "
+        "before dispatching a report so Telegram permits bot delivery."
     )
 
     if st.button("🔄 Start New Report", use_container_width=True):
