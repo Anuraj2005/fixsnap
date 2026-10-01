@@ -71,6 +71,8 @@ def get_bot_username(token: str) -> str:
         return ""
 
 bot_username = get_bot_username(TELEGRAM_BOT_TOKEN)
+bot_link = f"https://t.me/{bot_username}" if bot_username else "https://t.me/BotFather"
+bot_label = f"@{bot_username}" if bot_username else "Telegram Bot"
 
 
 def create_chat_session(client, model=MODEL_NAME):
@@ -205,9 +207,6 @@ if "onboarded" not in st.session_state:
     )
 
     # Dynamic Bot Information Box
-    bot_link = f"https://t.me/{bot_username}" if bot_username else "https://t.me/BotFather"
-    bot_label = f"@{bot_username}" if bot_username else "Telegram Bot"
-
     st.info(
         f"📱 **First time here? Follow these 2 quick setup steps:**\n\n"
         f"1. **Start the Bot:** Open [{bot_label}]({bot_link}) on Telegram and press **Start** (or send `/start`).\n"
